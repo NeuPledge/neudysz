@@ -73,7 +73,7 @@
     </select>
     <select id="findListByCategoryId" resultType="com.github.tangyi.api.exam.model.ExaminationSubject">
         SELECT
-            a.*
+            a.subject_id
         FROM
             exam_subjects a
         WHERE
