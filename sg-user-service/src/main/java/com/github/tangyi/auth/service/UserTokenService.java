@@ -45,6 +45,7 @@ public class UserTokenService {
 		LoginTypeEnum loginType = details.getLoginType();
 		if (this.tokenManager.saveToken(userToken, pair.getRight())) {
 			String token = this.tokenManager.createToken(userToken);
+			System.out.println("打印token:"+token);
 			Map<String, Object> map = Maps.newHashMapWithExpectedSize(3);
 			map.put("token", token);
 			map.put(CommonConstant.TENANT_CODE, details.getTenantCode());
