@@ -119,7 +119,10 @@
                  LEFT JOIN sys_menu a ON a.id = rm.menu_id
         WHERE r.is_deleted = 0
           AND a.is_deleted = 0
-          AND r.role_code = #{role}
+          AND r.role_code in
+        <foreach collection="role" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
         ORDER BY a.sort DESC
     </select>
 

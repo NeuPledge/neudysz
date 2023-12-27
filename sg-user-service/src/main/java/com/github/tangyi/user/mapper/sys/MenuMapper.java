@@ -23,7 +23,7 @@ public interface MenuMapper extends CrudMapper<Menu> {
      *
      * @param role 角色标识
      */
-    List<Menu> findByRoleNoTeNantCode(@Param("role") String role);
+    List<Menu> findByRoleNoTeNantCode(@Param("role") List<String> role);
 
     /**
      * 批量插入

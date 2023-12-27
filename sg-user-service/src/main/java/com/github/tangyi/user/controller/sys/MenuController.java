@@ -139,11 +139,13 @@ public class MenuController extends BaseController {
 		Collection<? extends GrantedAuthority> authorities = SysUtil.getAuthorities();
 		Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
 		GrantedAuthority firstAuthority = null;
+		List<String> list = new ArrayList<>();
 		if (iterator.hasNext()) {
 			firstAuthority = iterator.next();
+			String roleCode = firstAuthority.getAuthority();
+			list.add(roleCode);
 		}
-		String roleCode = firstAuthority.getAuthority();
-		List<MenuDto> roleNoTeNantCode = menuService.findByRoleNoTeNantCode(roleCode);
+		List<MenuDto> roleNoTeNantCode = menuService.findByRoleNoTeNantCode(list);
 		return R.success(roleNoTeNantCode);
 	}
 
