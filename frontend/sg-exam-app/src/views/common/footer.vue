@@ -4,30 +4,32 @@
       <div class="site-info">
         <el-row>
           <el-col :span="6" :offset="2" class="footer-col">
-            <a target="_blank" href="https://gitee.com/wells2333/sg-exam">{{$t('common.gitee')}}</a>
-            <a target="_blank" href="https://github.com/wells2333/sg-exam">{{$t('common.github')}}</a>
+            <a target="_blank" href="https://gitee.com/wells2333/sg-exam">{{ $t('common.gitee') }}</a>
+            <a target="_blank" href="https://github.com/wells2333/sg-exam">{{ $t('common.github') }}</a>
             <a target="_blank" href="javascript:void(0);"
-               onclick="window.open(window.location.origin + '/admin');return false;">{{$t('common.admin')}}</a>
+              onclick="window.open(window.location.origin + '/admin');return false;">{{ $t('common.admin') }}</a>
           </el-col>
           <el-col :span="6" class="footer-col">
             <a target="_blank" href="https://element.eleme.cn/#/zh-CN">Element UI</a>
             <a target="_blank" href="https://cn.vuejs.org/">Vue</a>
           </el-col>
           <el-col :span="6" class="footer-col">
-            <a target="_blank" href="https://gitee.com/wells2333/sg-exam/blob/master/CHANGELOG.md">{{$t('common.changeLog')}}</a>
-            <a target="_blank" href="https://gitee.com/wells2333/sg-exam/issues">{{$t('common.feedback')}}</a>
+            <a target="_blank" href="https://gitee.com/wells2333/sg-exam/blob/master/CHANGELOG.md">{{
+            $t('common.changeLog') }}</a>
+            <a target="_blank" href="https://gitee.com/wells2333/sg-exam/issues">{{ $t('common.feedback') }}</a>
           </el-col>
         </el-row>
       </div>
       <el-row :gutter="20">
         <el-col :span="12" :offset="8">
           <div class="copyright">
-            <h4 class="content-c2" style="text-align: center;">Copyright ©2022</h4>
+            <h4 class="content-c2" style="text-align: center;">Copyright ©{{ copyright }}</h4>
             <ul class="privacy">
-              <li class="content-c1"><a class="content-c0" @click="openLayer">{{$t('common.legalNotices')}}</a></li>
-              <li class="content-c1"><a class="content-c0" @click="openPrivacy">{{$t('common.privacyPolicy')}}</a></li>
-              <li class="content-c1"><a class="content-c0" target="_blank"
-                                        href="https://gitee.com/wells2333/sg-exam">{{$t('common.developerCenter')}}</a>
+              <li class="content-c1"><a class="content-c0" @click="openLayer">{{ $t('common.legalNotices') }}</a></li>
+              <li class="content-c1"><a class="content-c0" @click="openPrivacy">{{ $t('common.privacyPolicy') }}</a>
+              </li>
+              <li class="content-c1"><a class="content-c0" target="_blank" href="https://gitee.com/wells2333/sg-exam">{{
+            $t('common.developerCenter') }}</a>
               </li>
             </ul>
           </div>
@@ -37,7 +39,7 @@
         <el-col :span="12" :offset="6">
           <div class="cop">
             <a class="content-c3" href="https://beian.miit.gov.cn/" target="_blank">
-              <span class="content-c3">{{ sysConfig.sys_web_copyright}}</span>
+              <span class="content-c3">{{ sysConfig.sys_web_copyright }}</span>
             </a>
           </div>
         </el-col>
@@ -45,8 +47,9 @@
     </div>
   </div>
 </template>
+
 <script>
-import {mapGetters} from 'vuex'
+import { mapGetters } from 'vuex'
 export default {
   data() {
     return {}
@@ -54,7 +57,17 @@ export default {
   computed: {
     ...mapGetters([
       'sysConfig'
-    ])
+    ]),
+    copyright() {
+      let str = this.sysConfig.sys_web_copyright;
+      let pos = str.indexOf("备");
+      let copyright = str.substring(pos + 1).trim();
+      copyright = copyright.substring(0, 4);
+      if (copyright === "" || copyright == null) {
+        copyright = 2022;
+      }
+      return copyright;
+    }
   },
   methods: {
     openLayer() {
@@ -75,6 +88,7 @@ export default {
   components: {}
 }
 </script>
+
 <style lang="scss" rel="stylesheet/scss" scoped>
 .footer {
   background-position: 50%;
