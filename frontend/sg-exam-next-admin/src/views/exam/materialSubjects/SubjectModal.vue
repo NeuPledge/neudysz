@@ -7,14 +7,6 @@
           <template v-for="item in types" :key="item.key">
             <TabPane :tab="item.name" :disabled="item.disabled" forceRender="true">
               <component ref="subRef" :is="item.component"/>
-              <div v-if="item.key == 5">
-              <a-button
-                type="primary"
-                @click="handleClick"
-              >
-                题目管理
-              </a-button>
-            </div>
             </TabPane>
           </template>
         </Tabs>
@@ -30,7 +22,6 @@ import SubjectChoices from '/@/components/Subjects/SubjectChoices.vue';
 import SubjectShortAnswer from '/@/components/Subjects/SubjectShortAnswer.vue';
 import SubjectJudgement from '/@/components/Subjects/SubjectJudgement.vue';
 import SubjectFillBlank from '/@/components/Subjects/SubjectFillBlank.vue';
-import SubjectMaterial from '/@/components/Subjects/SubjectMaterial.vue';
 import {subjectType, subjectTypeList, TabItem} from '/@/components/Subjects/subject.constant';
 import {createSubject, getSubjectInfo, updateSubject} from '/@/api/exam/subject';
 import {getDefaultOptionList} from '/@/api/exam/option';
@@ -39,7 +30,7 @@ import {BasicModal, useModalInner} from '/@/components/Modal';
 import {BasicForm} from '/@/components/Form/index';
 import {useRoute} from "vue-router";
 import {useMessage} from "/@/hooks/web/useMessage";
-import {useGo} from "/@/hooks/web/usePage";
+
 export default defineComponent({
   name: 'SubjectDataModal',
   components: {
@@ -51,8 +42,7 @@ export default defineComponent({
     SubjectChoices,
     SubjectShortAnswer,
     SubjectJudgement,
-    SubjectFillBlank,
-    SubjectMaterial
+    SubjectFillBlank
   },
   emits: ['success', 'register'],
   setup(_, {emit}) {
@@ -62,8 +52,8 @@ export default defineComponent({
     const isUpdate = ref(true);
     let id: string;
     const route = useRoute();
-    const go = useGo();
-    const examinationId = ref<string>(route.params?.id + '');
+    const materialId = ref<any>(route.params?.materialId);
+    const examinationId = ref<any>(route.params?.examinationId);
     // 题目类型 tab
     const types = ref<Array<TabItem>>([...subjectTypeList]);
     // 默认单选题
@@ -129,8 +119,8 @@ export default defineComponent({
     async function initDefaultData() {
       const defaultOptions = await getDefaultOptionList();
       let nextSubjectNo: string = '1';
-      if (examinationId) {
-        const no = await nexSubjectNo(examinationId.value);
+      if (materialId) {
+        const no = await nexSubjectNo(materialId.value);
         if (no) {
           nextSubjectNo = no;
         }
@@ -150,7 +140,7 @@ export default defineComponent({
         const data = {
           defaultOptions,
           nextSubjectNo,
-          examinationId: unref(examinationId),
+          materialId: unref(materialId),
           isMulti: unref(isMulti),
         };
         subjectRef.resetSchemas(data);
@@ -173,6 +163,7 @@ export default defineComponent({
       try {
         setModalProps({confirmLoading: true});
         const value = await getSubjectRef().getSubjectValue();
+        value['examinationId'] = examinationId.value[0];
         if (id) {
           await updateSubject(id, value);
         } else {
@@ -204,27 +195,24 @@ export default defineComponent({
         defaultOptions,
         nextSubjectNo,
         isMulti: unref(isMulti),
-        examinationId: unref(examinationId),
+        materialId: unref(materialId),
       };
       const subjectRef = getSubjectRef();
       subjectRef.setSubjectValue(data);
     }
-    function handleClick(){
-      go('/exam/material_subjects/' + id +"/"+ examinationId.value);
-    }
+
     return {
       t,
       prefixCls: 'subject',
       subRef,
       types,
-      examinationId,
+      materialId,
       activeKey,
       isMulti,
       onChange,
       registerModal,
       getTitle,
       handleSubmit,
-      handleClick
     };
   },
 });

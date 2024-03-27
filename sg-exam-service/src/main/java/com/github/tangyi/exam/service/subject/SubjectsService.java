@@ -15,16 +15,15 @@ import com.github.tangyi.common.base.TreeEntity;
 import com.github.tangyi.common.service.CrudService;
 import com.github.tangyi.common.utils.ExecutorUtils;
 import com.github.tangyi.common.utils.PageUtil;
+import com.github.tangyi.common.utils.SnowFlakeId;
 import com.github.tangyi.constants.ExamCacheName;
 import com.github.tangyi.exam.enums.SubjectType;
 import com.github.tangyi.exam.mapper.SubjectsMapper;
 import com.github.tangyi.exam.service.ExaminationSubjectService;
+import com.github.tangyi.exam.service.MaterialSubjectService;
 import com.github.tangyi.exam.service.data.SubjectViewCounterService;
 import com.github.tangyi.exam.service.fav.SubjectFavoritesService;
-import com.github.tangyi.exam.service.subject.converter.SubjectChoicesConverter;
-import com.github.tangyi.exam.service.subject.converter.SubjectFillBlankConverter;
-import com.github.tangyi.exam.service.subject.converter.SubjectJudgementConverter;
-import com.github.tangyi.exam.service.subject.converter.SubjectShortAnswerConverter;
+import com.github.tangyi.exam.service.subject.converter.*;
 import com.github.tangyi.exam.utils.ExamUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -40,6 +39,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -51,13 +51,14 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class SubjectsService extends CrudService<SubjectsMapper, Subjects> implements ISubjectsService {
-
+	private final MaterialSubjectService msService;
 	private final ExaminationSubjectService esService;
 	private final SubjectCategoryService subjectCategoryService;
 	private final SubjectChoicesConverter subjectChoicesConverter;
 	private final SubjectShortAnswerConverter subjectShortAnswerConverter;
 	private final SubjectJudgementConverter judgementConverter;
 	private final SubjectFillBlankConverter fillBlankConverter;
+	private final SubjectMaterialConverter subjectMaterialConverter;
 	private final SubjectFavoritesService subjectFavoritesService;
 	private final SubjectViewCounterService subjectViewCounterService;
 	private final AttachmentManager attachmentManager;
@@ -210,8 +211,12 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 		sub.setType(dto.getType());
 		sub.setSort(dto.getSort());
 		insert(sub);
-		if (dto.getExaminationId() != null) {
+		if (dto.getExaminationId() != null && dto.getMaterialId() == null) {
 			insertEs(dto, subjectId, dto.getCreator(), dto.getTenantCode());
+		}
+		if (dto.getMaterialId() != null){
+			insertMs(dto, subjectId, dto.getCreator(), dto.getTenantCode());
+			// 查询
 		}
 		return dto;
 	}
@@ -234,6 +239,30 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 			} catch (DuplicateKeyException e) {
 				es.setSort(dto.getSort() + i);
 				log.warn("Duplicate subject sort, retry {}", es.getSort());
+			}
+		}
+
+		throw new IllegalArgumentException("The subject repeated, please modify.");
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void insertMs(SubjectDto dto, Long subjectId, String creator, String tenantCode) {
+		MaterialSubject ms = new MaterialSubject();
+		ms.setNewRecord(true);
+		ms.setCommonValue(creator, tenantCode);
+		ms.setSubjectId(subjectId);
+		ms.setMaterialId(dto.getMaterialId());
+		ms.setSort(dto.getSort());
+		ms.setExaminationId(dto.getExaminationId());
+		// 序号重复时，尝试递增插入
+		for (int i = 1; i < 10; i++) {
+			try {
+				if (msService.insert(ms) > 0) {
+					return;
+				}
+			} catch (DuplicateKeyException e) {
+				ms.setSort(dto.getSort() + i);
+				log.warn("Duplicate subject sort, retry {}", ms.getSort());
 			}
 		}
 
@@ -301,6 +330,9 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 			ExaminationSubject examinationSubject = new ExaminationSubject();
 			examinationSubject.setSubjectId(dto.getId());
 			esService.deleteBySubjectId(examinationSubject);
+			MaterialSubject materialSubject = new MaterialSubject();
+			materialSubject.setMaterialId(dto.getId());
+			msService.deleteByMaterialId(materialSubject);
 		}
 		return sub;
 	}
@@ -430,6 +462,11 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 				List<SubjectFillBlank> subjects = SubjectServiceFactory.getFillBlankService().findListById(ids);
 				if (CollectionUtils.isNotEmpty(subjects)) {
 					c = fillBlankConverter.convert(subjects, findAnswer);
+				}
+			}else if (SubjectType.MATERIAL.getValue() == entry.getKey()) {
+				List<SubjectMaterial> subjects = SubjectServiceFactory.getSubjectMaterialService().findListById(ids);
+				if (CollectionUtils.isNotEmpty(subjects)) {
+					c = subjectMaterialConverter.convert(subjects, findAnswer);
 				}
 			}
 

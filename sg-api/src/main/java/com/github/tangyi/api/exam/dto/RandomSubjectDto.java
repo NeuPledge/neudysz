@@ -7,5 +7,7 @@ public class RandomSubjectDto {
 
 	private Long categoryId;
 
+	private Long examinationId;
+
 	private Integer subjectCount;
 }
