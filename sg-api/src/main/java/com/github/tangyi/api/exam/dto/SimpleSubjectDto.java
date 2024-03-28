@@ -43,6 +43,17 @@ public class SimpleSubjectDto {
 	 */
 	private List<SimpleSubjectOptionDto> options;
 
+	/**
+	 * 材料附属题
+	 */
+	private List<SimpleSubjectDto> childSubjects;
+
+	/**
+	 * 材料附属题数量
+	 */
+	private Integer childLength;
+
+
 	private Integer sort;
 
 	private String speechUrl;

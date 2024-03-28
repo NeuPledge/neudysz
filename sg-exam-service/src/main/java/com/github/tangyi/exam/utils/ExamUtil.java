@@ -8,6 +8,7 @@ import com.github.tangyi.api.exam.model.Answer;
 import com.github.tangyi.api.exam.model.ExaminationSubject;
 import com.github.tangyi.api.exam.model.SubjectOption;
 import com.github.tangyi.api.exam.model.Subjects;
+import com.github.tangyi.exam.enums.SubjectType;
 import com.github.tangyi.exam.excel.ExamRecordModel;
 import com.github.tangyi.exam.excel.SubjectExcelModel;
 import com.github.tangyi.exam.handler.HandlerFactory;
@@ -67,6 +68,7 @@ public class ExamUtil {
 				}
 			}
 			simple.setOptions(optionDtoList);
+			simple.setChildLength(dto.getChildLength());
 			simples.add(simple);
 		}
 		return simples;
@@ -142,7 +144,7 @@ public class ExamUtil {
 	}
 
 	public static Map<Integer, List<Long>> groupByType(List<Subjects> subjects) {
-		Map<Integer, List<Long>> result = Maps.newHashMapWithExpectedSize(4);
+		Map<Integer, List<Long>> result = Maps.newHashMapWithExpectedSize(5);
 		for (Subjects sub : subjects) {
 			Integer type = sub.getType();
 			List<Long> ids = result.computeIfAbsent(type, s -> new ArrayList<>());

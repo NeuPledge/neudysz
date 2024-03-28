@@ -361,7 +361,7 @@ public class ExaminationService extends CrudService<ExaminationMapper, Examinati
 	/**
 	 * 根据考试 ID 查询全部题目，不返回题目的答案
 	 */
-	@Cacheable(value = ExamCacheName.EXAM_ALL_SUBJECT, key = "#examinationId")
+//	@Cacheable(value = ExamCacheName.EXAM_ALL_SUBJECT, key = "#examinationId")
 	public List<SimpleSubjectDto> allSubjects(Long examinationId) {
 		List<ExaminationSubject> ess = examinationSubjectService.findListByExaminationId(examinationId);
 		if (CollectionUtils.isNotEmpty(ess)) {
@@ -373,6 +373,10 @@ public class ExaminationService extends CrudService<ExaminationMapper, Examinati
 				for (SubjectDto dto : dtoList) {
 					if (dto.getId().equals(es.getSubjectId())) {
 						sorted.add(dto);
+						if (dto.getType().equals(SubjectType.MATERIAL.getValue())){
+							List<SubjectDto> childSubjects = dto.getChildSubjects();
+							sorted.addAll(childSubjects);
+						}
 						break;
 					}
 				}

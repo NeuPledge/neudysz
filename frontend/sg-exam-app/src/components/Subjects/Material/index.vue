@@ -4,7 +4,7 @@
       <div class="subject-title">
         {{ subjectInfo.sort }}.&nbsp;
         <span class="subject-title-content" v-html="subjectInfo.subjectName"/>
-        （{{ $t('exam.subject.subjectTypeFillBlank') }}）
+        （{{ $t('exam.subject.subjectTypeMaterial') }}）
       </div>
       <div class="subject-speech-info" v-if="subjectInfo.speechUrl">
         <sg-audio ref="sgAudio" :src="subjectInfo.speechUrl"></sg-audio>
@@ -12,10 +12,7 @@
       <div class="subject-video-info" v-if="subjectInfo.subjectVideoUrl">
         <sg-video ref="sgVideo"></sg-video>
       </div>
-      <div class="subject-tinymce">
-        <el-input type="textarea" rows="10" v-model="userAnswer" @change="handleInputChange" :placeholder="$t('exam.subject.fillBlankAnswerPlaceholder')">
-        </el-input>
-      </div>
+      
     </div>
   </div>
 </template>
@@ -27,7 +24,7 @@ import SgVideo from '@/components/SgVideo'
 import {setVideoSrc, pauseVideo, pauseAudio, setAudioSrc} from '@/utils/busi'
 
 export default {
-  name: 'FillBlank',
+  name: 'Material',
   components: {
     Tinymce,
     SgAudio,
