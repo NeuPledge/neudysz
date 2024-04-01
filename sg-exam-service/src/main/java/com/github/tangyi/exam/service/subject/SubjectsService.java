@@ -104,7 +104,7 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 		if (StringUtils.isEmpty(dto.getSubjectVideoUrl()) && dto.getSubjectVideoId() != null) {
 			dto.setSubjectVideoUrl(attachmentManager.getPreviewUrlIgnoreException(dto.getSubjectVideoId()));
 		}
-		if (dto.getSpeechId() != null) {
+		if (StringUtils.isEmpty(dto.getSpeechUrl()) && dto.getSpeechId() != null) {
 			dto.setSpeechUrl(attachmentManager.getPreviewUrlIgnoreException(dto.getSpeechId()));
 		}
 		return dto;
@@ -472,9 +472,12 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 						List<MaterialSubject> listByMaterial = msService.findListByMaterialId(subjectDto.getId());
 						Long[] subjectIds = listByMaterial.stream().map(MaterialSubject::getSubjectId).toArray(Long[]::new);
 						subjectDto.setChildLength(subjectIds.length);
-						List<Subjects> childSubjects = findBySubjectIds(subjectIds);
-						List<SubjectDto> subjectDtoList = findSubjectDtoList(childSubjects, true, false);
-						subjectDto.setChildSubjects(subjectDtoList);
+						if (subjectIds.length > 0){
+							List<Subjects> childSubjects = findBySubjectIds(subjectIds);
+							List<SubjectDto> subjectDtoList = findSubjectDtoList(childSubjects, true, false);
+							subjectDto.setChildSubjects(subjectDtoList);
+						}
+
 					}
 				}
 			}

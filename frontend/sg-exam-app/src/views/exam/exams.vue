@@ -42,10 +42,23 @@
               <div class="card-item-course-detail" v-if="exam.course !== undefined && exam.course !== null">
                 <a href="#">{{ exam.course.courseName }}</a>
               </div>
-              <div class="card-item-course-detail">
+              <div v-else>
+                {{$t('exam.exams.unrelatedCourse')}}
+              </div>
+              <div class="card-item-course-detail" v-if="exam.startTime !== undefined && exam.startTime !== null">
                 <a href="#">{{ exam.startTime }}~{{ exam.endTime }}</a>
               </div>
+              <div v-else>
+                {{$t('exam.exams.withoutTimeLimit')}}
+              </div>
             </div>
+          </div>
+          <div class="seat-rating-fee d-flex justify-content-between">
+              <div class="seat-rating h-100 d-flex align-items-center">
+                <div class="seat" :title="$t('exam.course.courses.registerStudentsCnt')">
+                  <i class="el-icon-user-solid" aria-hidden="true"></i> {{exam.joinNum}}
+                </div>
+              </div>
           </div>
         </div>
       </transition>
@@ -90,7 +103,7 @@ export default {
         sort: 'id',
         order: ' asc',
         page: 1,
-        pageSize: 6,
+        pageSize: 8,
         examinationName: '',
         status: 1
       },
@@ -176,9 +189,9 @@ export default {
     changeTag (tag) {
       this.activeTag = tag
       if (tag === '2') {
-        this.query.sort = 'create_date'
-      } else if (tag === '3') {
-        this.query.sort = 'create_date'
+        this.query.sort = 'create_time'
+      } else if (tag === '4') {
+        this.query.sort = 'join'
       } else {
         this.query.sort = 'id'
       }
