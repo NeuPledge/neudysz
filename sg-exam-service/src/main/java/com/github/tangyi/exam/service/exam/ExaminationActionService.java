@@ -2,6 +2,7 @@ package com.github.tangyi.exam.service.exam;
 
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.NetUtil;
+import com.github.pagehelper.PageInfo;
 import com.github.tangyi.api.exam.constants.AnswerConstant;
 import com.github.tangyi.api.exam.dto.*;
 import com.github.tangyi.api.exam.enums.SubmitStatusEnum;
@@ -15,9 +16,11 @@ import com.github.tangyi.common.model.R;
 import com.github.tangyi.common.utils.*;
 import com.github.tangyi.common.vo.UserVo;
 import com.github.tangyi.exam.enums.ExaminationType;
+import com.github.tangyi.exam.enums.SubjectType;
 import com.github.tangyi.exam.handler.HandlerFactory;
 import com.github.tangyi.exam.service.ExamRecordService;
 import com.github.tangyi.exam.service.ExaminationSubjectService;
+import com.github.tangyi.exam.service.MaterialSubjectService;
 import com.github.tangyi.exam.service.RankInfoService;
 import com.github.tangyi.exam.service.answer.AnswerService;
 import com.github.tangyi.exam.service.fav.ExamFavoritesService;
@@ -25,15 +28,18 @@ import com.github.tangyi.exam.service.subject.SubjectsService;
 import com.github.tangyi.exam.utils.ExamUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.ehcache.spi.service.MaintainableService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -45,11 +51,13 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@AllArgsConstructor
 public class ExaminationActionService implements IExaminationActionService {
 
 	private final PlatformTransactionManager txManager;
@@ -62,40 +70,66 @@ public class ExaminationActionService implements IExaminationActionService {
 	private final RankInfoService rankInfoService;
 	private final IExecutorHolder executorHolder;
 	private final ExamFavoritesService examFavoritesService;
-
-	public ExaminationActionService(PlatformTransactionManager txManager, IIdentifyService identifyService,
-			ExaminationService examinationService, ExaminationSubjectService examinationSubjectService,
-			ExamRecordService examRecordService, SubjectsService subjectsService, AnswerService answerService,
-			RankInfoService rankInfoService, IExecutorHolder executorHolder,
-			ExamFavoritesService examFavoritesService) {
-		this.txManager = txManager;
-		this.identifyService = identifyService;
-		this.examinationService = examinationService;
-		this.examinationSubjectService = examinationSubjectService;
-		this.examRecordService = examRecordService;
-		this.subjectsService = subjectsService;
-		this.answerService = answerService;
-		this.rankInfoService = rankInfoService;
-		this.executorHolder = executorHolder;
-		this.examFavoritesService = examFavoritesService;
-	}
-
+	private final MaterialSubjectService materialSubjectService;
 	@Override
 	@Transactional
 	public StartExamDto start(ExaminationRecord examRecord) {
 		SgPreconditions.checkNull(examRecord.getExaminationId(), "The examination id cannot be null.");
 		SgPreconditions.checkNull(examRecord.getUserId(), "The user id cannot be null.");
+		// 看上一次考试是否提交
+		HashMap<String, Object> condition = Maps.newHashMapWithExpectedSize(3);
+		condition.put("userId", examRecord.getUserId());
+		condition.put("examinationId", examRecord.getExaminationId());
+		condition.put("tenantCode", SysUtil.getTenantCode());
+		PageInfo<ExaminationRecord> page = examRecordService.findPage(condition, 1, 10);
+		List<ExaminationRecord> list = page.getList();
+		if (CollectionUtils.isNotEmpty(list)){
+			ExaminationRecord examinationRecord = list.get(0);
+			Integer status = examinationRecord.getSubmitStatus();
+			if (status == 0){
+				// 未提交，则继续考试
+				StartExamDto startExamDto = new StartExamDto();
+				startExamDto.setExamRecord(examinationRecord);
+				// 答题卡
+				List<CardDto> cardDtos = getcardDtos(examRecord.getExaminationId());
+				startExamDto.setCards(cardDtos);
+				return startExamDto;
+			}
+		}
+		// 没有答题记录,或者最近一次答题是提交状态
 		return this.start(examRecord.getUserId(), SysUtil.getUser(), examRecord.getExaminationId(),
 				SysUtil.getTenantCode());
+	}
+
+	private List<CardDto> getcardDtos(Long examinationId){
+		ListeningExecutorService exec = executorHolder.getExamExecutor();
+		ListenableFuture<List<CardDto>> f1 = exec.submit(() -> {
+			List<ExaminationSubject> ess = examinationSubjectService.findListByExaminationId(examinationId);
+			if (CollectionUtils.isNotEmpty(ess)) {
+				return ess.stream().map(es -> {
+					CardDto c = new CardDto();
+					c.setSubjectId(es.getSubjectId());
+					c.setSort(es.getSort());
+					return c;
+				}).collect(Collectors.toList());
+			}
+			return Collections.emptyList();
+		});
+		try {
+			List<CardDto> cardDtos = f1.get();
+			return  cardDtos;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public StartExamDto start(Long userId, String identifier, Long examinationId, String tenantCode) {
 		StartExamDto dto = this.prepareStart(userId, examinationId);
+		// 第一条题目信息
 		SubjectDto sDto = dto.getSubjectDto();
 		Preconditions.checkNotNull(sDto);
 		dto.setTotal(sDto.getTotal());
-
 		ExaminationRecord record = new ExaminationRecord();
 		record.setCommonValue(identifier, tenantCode);
 		record.setUserId(userId);
@@ -105,7 +139,6 @@ public class ExaminationActionService implements IExaminationActionService {
 		// 默认未提交状态
 		record.setSubmitStatus(SubmitStatusEnum.NOT_SUBMITTED.getValue());
 		dto.setExamRecord(record);
-
 		// 手动开启事务
 		DefaultTransactionDefinition def = new DefaultTransactionDefinition();
 		def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -172,7 +205,7 @@ public class ExaminationActionService implements IExaminationActionService {
 		ExaminationRecord record = this.examRecordService.get(recordId);
 		Long[] ids = answerList.stream().map(Answer::getSubjectId).toArray(Long[]::new);
 		Map<Integer, List<Answer>> distinct = this.distinctAnswer(ids, answerList);
-		distinct.remove(5);// 去掉材料题
+		distinct.remove(SubjectType.MATERIAL.getValue());// 去掉材料题
 		HandlerFactory.Result result = HandlerFactory.handleAll(distinct);
 		// 记录总分、正确题目数、错误题目数
 		record.setScore(result.getScore());
@@ -230,6 +263,7 @@ public class ExaminationActionService implements IExaminationActionService {
 		String tenantCode = SysUtil.getTenantCode();
 		Long recordId = answers.get(0).getExamRecordId();
 		Long[] ids = answers.stream().map(AnswerDto::getSubjectId).toArray(Long[]::new);
+		// 初次答题，只有一个题
 		List<Answer> dbAnswers = answerService.batchFindByRecordIdAndSubjectId(recordId, ids);
 		Map<Long, Answer> answerMap = dbAnswers.stream().collect(Collectors.toMap(Answer::getSubjectId, s -> s));
 		// 区分更新和插入
@@ -241,15 +275,26 @@ public class ExaminationActionService implements IExaminationActionService {
 			BeanUtils.copyProperties(answer, newAnswer);
 			newAnswer.setEndTime(endTime);
 			Answer dbAnswer = answerMap.get(answer.getSubjectId());
+			List<MaterialSubject> materialSubject = materialSubjectService.findListByMaterialId(answer.getSubjectId());
 			if (dbAnswer != null) {
 				newAnswer.setCommonValue(userCode, tenantCode);
 				newAnswer.setAnswer(answer.getAnswer());
+				// 是材料题，就做标记
+				if (CollectionUtils.isNotEmpty(materialSubject)){
+					newAnswer.setAnswerType(AnswerConstant.NotCount);
+					newAnswer.setMarkStatus(1); // 标记为批改
+				}
 				updates.add(newAnswer);
 			} else {
 				newAnswer.setNewRecord(true);
 				newAnswer.setCommonValue(userCode, tenantCode);
 				newAnswer.setMarkStatus(AnswerConstant.TO_BE_MARKED);
 				newAnswer.setAnswerType(AnswerConstant.WRONG);
+				// 是材料题，就做标记
+				if (CollectionUtils.isNotEmpty(materialSubject)){
+					newAnswer.setAnswerType(AnswerConstant.NotCount);
+					newAnswer.setMarkStatus(1); // 标记为批改
+				}
 				inserts.add(newAnswer);
 			}
 		}
@@ -381,9 +426,10 @@ public class ExaminationActionService implements IExaminationActionService {
 			CardDto card = new CardDto();
 			card.setSort(es.getSort());
 			card.setSubjectId(es.getSubjectId());
-			cards.add(card);
 			Answer answer = answerMap.get(es.getSubjectId());
 			if (answer != null) {
+				// 这个题目已经回答了
+				card.setAnswered(true);
 				AnswerDto dto = new AnswerDto();
 				BeanUtils.copyProperties(answer, dto);
 				SubjectDto subjectDto = map.get(answer.getSubjectId());
@@ -401,9 +447,9 @@ public class ExaminationActionService implements IExaminationActionService {
 						card = new CardDto();
 						card.setSort(childSubject.getSort());
 						card.setSubjectId(childSubject.getId());
-						cards.add(card);
 						answer = answerMap.get(childSubject.getId());
 						if (answer != null) {
+							card.setAnswered(true);
 							dto = new AnswerDto();
 							BeanUtils.copyProperties(answer, dto);
 							dto.setSubject(childSubject);
@@ -415,9 +461,11 @@ public class ExaminationActionService implements IExaminationActionService {
 							dto.setSpeechPlayCnt(answer.getSpeechPlayCnt());
 							list.add(dto);
 						}
+						cards.add(card);
 					}
 				}
 			}
+			cards.add(card);
 		}
 		return list;
 	}
@@ -432,7 +480,6 @@ public class ExaminationActionService implements IExaminationActionService {
 				log.info("Submit future finished, recordId: {}, user: {}, took: {}", recordId, userCode,
 						StopWatchUtil.stop(watch));
 			}
-
 			@Override
 			public void onFailure(@Nullable Throwable e) {
 				log.error("Submit future failed, recordId: {}, user: {}", recordId, userCode, e);
@@ -449,20 +496,6 @@ public class ExaminationActionService implements IExaminationActionService {
 	private StartExamDto prepareStart(Long userId, Long examinationId) {
 		long startNs = System.nanoTime();
 		ListeningExecutorService exec = executorHolder.getExamExecutor();
-		// 答题卡
-		ListenableFuture<List<CardDto>> f1 = exec.submit(() -> {
-			List<ExaminationSubject> ess = examinationSubjectService.findListByExaminationId(examinationId);
-			if (CollectionUtils.isNotEmpty(ess)) {
-				return ess.stream().map(es -> {
-					CardDto c = new CardDto();
-					c.setSubjectId(es.getSubjectId());
-					c.setSort(es.getSort());
-					return c;
-				}).collect(Collectors.toList());
-			}
-			return Collections.emptyList();
-		});
-
 		// 获取第一题信息
 		ListenableFuture<SubjectDto> f2 = exec.submit(
 				() -> subjectsService.findFirstSubjectByExaminationId(examinationId));
@@ -470,7 +503,8 @@ public class ExaminationActionService implements IExaminationActionService {
 
 		StartExamDto dto = new StartExamDto();
 		try {
-			dto.setCards(f1.get());
+			// 答题卡
+			dto.setCards(getcardDtos(examinationId));
 			dto.setSubjectDto(f2.get());
 			dto.setExamination(f3.get());
 		} catch (Exception e) {
