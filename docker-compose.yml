@@ -20,6 +20,8 @@ services:
     ports:
       # 宿主机：容器
       - 3306:3306
+    networks:
+      - my-network
 
   sg-next-app:
     build: frontend
