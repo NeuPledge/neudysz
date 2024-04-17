@@ -87,7 +87,8 @@ export const SpeechApi = {
 
 export const DashboardApi = {
   Dashboard: UserService + '/v1/dashboard',
-  Tendency: UserService + '/v1/dashboard/examRecordTendency'
+  Tendency: UserService + '/v1/dashboard/examRecordTendency',
+  SubjectNumByType: UserService + '/v1/dashboard/subjectNumByType'
 }
 
 export const DeptApi = {

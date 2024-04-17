@@ -22,6 +22,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -69,4 +70,16 @@ public class DashboardDto implements Serializable {
 	 * 考试记录日期
 	 */
 	private List<String> examRecordDate = new ArrayList<>();
+
+	/**
+	 * 题目数量
+	 */
+	private List<String> subjectNumData = new ArrayList<>();
+
+	/**
+	 * 题目类型
+	 */
+	private List<String> subjectTypeData = new ArrayList<>();
+
+	private Map<String, String> subjectTypeNumPercent;
 }

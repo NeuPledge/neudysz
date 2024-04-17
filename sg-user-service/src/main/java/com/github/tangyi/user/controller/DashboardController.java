@@ -17,14 +17,18 @@
 package com.github.tangyi.user.controller;
 
 import com.github.tangyi.api.exam.dto.ExaminationDashboardDto;
+import com.github.tangyi.api.exam.model.Subjects;
 import com.github.tangyi.api.user.dto.DashboardDto;
 import com.github.tangyi.common.base.BaseController;
 import com.github.tangyi.common.model.R;
 import com.github.tangyi.common.utils.SysUtil;
 import com.github.tangyi.common.vo.UserVo;
+import com.github.tangyi.exam.enums.SubjectType;
 import com.github.tangyi.exam.service.ExamRecordService;
+import com.github.tangyi.exam.service.subject.SubjectsService;
 import com.github.tangyi.user.service.sys.TenantService;
 import com.github.tangyi.user.service.sys.UserService;
+import com.google.common.collect.Lists;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -32,6 +36,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.*;
 
 @AllArgsConstructor
 @Tag(name = "后台首页数据展示")
@@ -42,6 +48,7 @@ public class DashboardController extends BaseController {
 	private final UserService userService;
 	private final TenantService tenantService;
 	private final ExamRecordService examRecordService;
+	private final SubjectsService subjectsService;
 
 	/**
 	 * 获取管控台首页数据
@@ -83,6 +90,23 @@ public class DashboardController extends BaseController {
 		ExaminationDashboardDto tendency = examRecordService.findExamRecordTendency(SysUtil.getTenantCode(), pastDays);
 		dto.setExamRecordDate(tendency.getExamRecordDate());
 		dto.setExamRecordData(tendency.getExamRecordData());
+		return R.success(dto);
+	}
+
+	/**
+	 * 各个分类的题目数量
+	 */
+	@GetMapping("subjectNumByType")
+	@Operation(summary = "各个分类的题目数量", description = "各个分类的题目数量")
+	public R<DashboardDto> subjectNumByType() {
+		DashboardDto dto = new DashboardDto();
+		SubjectType[] subjectTypes = SubjectType.values();
+		HashMap<String, String> resMap = new LinkedHashMap<>();
+		for (SubjectType subjectType : subjectTypes) {
+			Integer count = subjectsService.findSubjectCountByType(subjectType.getValue());
+			resMap.put(subjectType.getName(),count == null ? "0" : String.valueOf(count));
+		}
+		dto.setSubjectTypeNumPercent(resMap);
 		return R.success(dto);
 	}
 }
