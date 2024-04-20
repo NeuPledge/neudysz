@@ -166,7 +166,7 @@ export default defineComponent({
           props.handleDone?.("null");
         }
         message.success('删除成功');
-        emit('done', file);
+        emit('done', file);     
       }
     }
 
