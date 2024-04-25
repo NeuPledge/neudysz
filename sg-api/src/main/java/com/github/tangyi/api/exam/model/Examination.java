@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 The sg-exam authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.github.tangyi.api.exam.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -96,7 +112,13 @@ public class Examination extends BaseEntity<Examination> {
 	private String tags;
 
 	/**
-	 * 答题模式，0：展示全部题目，1：上一题、下一题模式
+	 * 出题模式，0：顺序出题，1：随机出题
+	 */
+	@Column(name = "show_subject_type")
+	private Integer showSubjectType;
+
+	/**
+	 * 答题模式，0：单页模式，1：顺序模式
 	 */
 	@Column(name = "answer_type")
 	private Integer answerType;
