@@ -1,23 +1,10 @@
-/*
- * Copyright 2024 The sg-exam authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.github.tangyi.config;
 
 import com.github.tangyi.common.utils.EnvUtils;
-import io.micrometer.core.instrument.util.StringUtils;
+import lombok.extern.slf4j.Slf4j;
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.SocketOptions;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -25,21 +12,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.*;
+import redis.clients.jedis.JedisPoolConfig;
 
+import javax.annotation.PreDestroy;
 import java.time.Duration;
 
-
-//@Configuration
-//@EnableCaching
-public class RedisCacheConfig {
+@Configuration
+@EnableCaching
+public class JRedisCacheConfig {
 
     // 超时时间：24 小时
     public static final int DEFAULT_REDIS_CACHE_EXPIRE = EnvUtils.getInt("DEFAULT_REDIS_CACHE_EXPIRE", 24);
@@ -60,7 +46,7 @@ public class RedisCacheConfig {
     private int timeOutSecond;
 
     @Bean
-    public LettuceConnectionFactory lettuceConnectionFactory() {
+    public JedisConnectionFactory jedisConnectionFactory() {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration(redisHost, port);
         if (StringUtils.isNotEmpty(username)) {
             configuration.setUsername(username);
@@ -69,30 +55,39 @@ public class RedisCacheConfig {
             configuration.setPassword(redisPassword);
         }
 
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(Duration.ofSeconds(timeOutSecond))
-                .build();
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(10);
+        poolConfig.setMaxIdle(5);
+        poolConfig.setMinIdle(1);
+        poolConfig.setTestOnBorrow(true);
+        poolConfig.setTestOnReturn(true);
+        poolConfig.setTestWhileIdle(true);
+        poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60).toMillis());
+        poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30).toMillis());
+        poolConfig.setNumTestsPerEvictionRun(-1);
 
-        return new LettuceConnectionFactory(configuration, clientConfig);
+        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(configuration);
+        jedisConnectionFactory.setPoolConfig(poolConfig);
+        jedisConnectionFactory.setTimeout(timeOutSecond * 1000); // in milliseconds
+        return jedisConnectionFactory;
     }
 
     @Bean
-    public RedisTemplate<String, Long> longRedisTemplate(LettuceConnectionFactory lettuceConnectionFactory) {
+    public RedisTemplate<String, Long> longRedisTemplate(JedisConnectionFactory jedisConnectionFactory) {
         RedisTemplate<String, Long> redisTemplate = new RedisTemplate<>();
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-        redisTemplate.setConnectionFactory(lettuceConnectionFactory);
+        redisTemplate.setConnectionFactory(jedisConnectionFactory);
         return redisTemplate;
     }
 
-
     @Bean
-    public CacheManager cacheManager(LettuceConnectionFactory lettuceConnectionFactory) {
+    public CacheManager cacheManager(JedisConnectionFactory jedisConnectionFactory) {
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(DEFAULT_REDIS_CACHE_EXPIRE))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()));
-        return RedisCacheManager.builder(lettuceConnectionFactory)
+        return RedisCacheManager.builder(jedisConnectionFactory)
                 .cacheDefaults(redisCacheConfiguration)
                 .build();
     }
