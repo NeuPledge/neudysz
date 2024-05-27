@@ -43,8 +43,7 @@ const option = {
   yAxis: {
     type: 'value',
     name: '人数',
-    max: 100,
-    splitNumber: 4,
+    splitNumber: 1,
     nameTextStyle: {
       color: '#019680'
     }

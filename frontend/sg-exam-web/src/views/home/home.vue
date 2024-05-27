@@ -86,10 +86,9 @@
                 <div class="meta d-flex align-items-center">
                   <a href="#">{{ course.teacher }}</a>
                   <span><i class="fa fa-circle" aria-hidden="true"></i></span>
-                  <a href="#">{{ course.major !== null ? course.major : '' }}</a>
+                  <a href="#">{{ course.major != null ? course.major : '' }}</a>
                 </div>
-                <p class="clamp">
-                  {{ course.simpleDesc !== null ? course.simpleDesc : '暂无简介' }}</p>
+                <p class="clamp">{{course.simpleDesc != null ? course.simpleDesc : '暂无简介'}}</p>
               </div>
               <div class="seat-rating-fee d-flex justify-content-between">
                 <div class="seat-rating h-100 d-flex align-items-center">

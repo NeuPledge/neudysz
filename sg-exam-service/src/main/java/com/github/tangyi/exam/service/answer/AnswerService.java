@@ -400,9 +400,13 @@ public class AnswerService extends CrudService<AnswerMapper, Answer> implements 
 		AnswerAnalysisDto dto = new AnswerAnalysisDto();
 		Examination examination = this.examinationService.get(examinationId);
 		Optional.ofNullable(examination).ifPresent(e -> dto.setExaminationName(e.getExaminationName()));
-		// 查询这个考试所有的已提交考试记录
+		// 查询这个考试所有的已批改记录
 		List<ExaminationRecord> records = this.examRecordService.getByExaminationId(examinationId);
+		records =  records.stream()
+				.filter(record -> record.getSubmitStatus() > 1)
+				.collect(Collectors.toList());
 		dto.setUserCnt(CollectionUtils.size(records));
+		dto.setFullScore(examination.getTotalScore());
 		if (CollectionUtils.isNotEmpty(records)) {
 			// 按分数排序
 			List<ExaminationRecord> sorted = records.stream().filter(record -> record.getScore() != null)
@@ -485,15 +489,21 @@ public class AnswerService extends CrudService<AnswerMapper, Answer> implements 
 		AtomicInteger defaultCount = new AtomicInteger(0);
 		// 计算成绩分布数量
 		Map<String, Integer> data = Maps.newLinkedHashMap();
+		double fullScore = dto.getFullScore();
 		data.put("60 以下", distribution.getOrDefault(1, defaultCount).get());
 		data.put("60-70", distribution.getOrDefault(2, defaultCount).get());
 		data.put("70-80", distribution.getOrDefault(3, defaultCount).get());
 		data.put("80-90", distribution.getOrDefault(4, defaultCount).get());
 		data.put("90-100", distribution.getOrDefault(5, defaultCount).get());
-		data.put("100-110", distribution.getOrDefault(6, defaultCount).get());
-		data.put("110-120", distribution.getOrDefault(7, defaultCount).get());
-		data.put("120-130", distribution.getOrDefault(8, defaultCount).get());
-		data.put("130 以上", distribution.getOrDefault(9, defaultCount).get());
+		if (fullScore > 100) {
+			if (fullScore <= 120) {
+				data.put("100-110", distribution.getOrDefault(6, defaultCount).get());
+				data.put("110-120", distribution.getOrDefault(7, defaultCount).get());
+			} else {
+				data.put("120-130", distribution.getOrDefault(8, defaultCount).get());
+				data.put("130 以上", distribution.getOrDefault(9, defaultCount).get());
+			}
+		}
 		dto.setScoreDistribution(data);
 
 		// 计算成绩分布百分比
@@ -516,9 +526,9 @@ public class AnswerService extends CrudService<AnswerMapper, Answer> implements 
 			level = 3;
 		} else if (score >= 80 && score < 90) {
 			level = 4;
-		} else if (score >= 90 && score < 100) {
+		} else if (score >= 90 && score <= 100) {
 			level = 5;
-		} else if (score >= 100 && score < 110) {
+		} else if (score > 100 && score < 110) {
 			level = 6;
 		} else if (score >= 110 && score < 120) {
 			level = 7;

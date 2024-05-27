@@ -15,7 +15,7 @@ export const submitStatus = {
   3: 'green'
 }
 export const submitStatusText = {
-  0: '待批改',
+  0: '未提交',
   1: '待批改',
   2: '已批改',
   3: '统计完成'

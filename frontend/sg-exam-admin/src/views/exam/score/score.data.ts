@@ -11,12 +11,23 @@ export const submitStatus = {
   3: 'green'
 }
 export const submitStatusText = {
-  0: '待批改',
+  0: '未提交',
   1: '待批改',
   2: '已批改',
   3: '统计完成'
 }
 export const examColumns: BasicColumn[] = [
+  {
+    title: '封面',
+    dataIndex: 'imageUrl',
+    width: 100,
+    style: {
+      cursor: 'pointer'
+    },
+    customRender: ({ record }) => {
+      return h(Image, { src: record.imageUrl, height: '40px', alt: record.examinationName });
+    },
+  },
   {
     title: '考试名称',
     dataIndex: 'examinationName',
@@ -33,14 +44,16 @@ export const examColumns: BasicColumn[] = [
     },
   },
   {
-    title: '图片',
-    dataIndex: 'imageUrl',
-    width: 100,
-    style: {
-      cursor: 'pointer'
-    },
-    customRender: ({ record }) => {
-      return h(Image, { src: record.imageUrl, height: '40px', alt: record.examinationName });
+    title: '考试名称',
+    dataIndex: 'tags',
+    width: 180,
+    customRender: ({record}) => {
+      const tags = record.tags;
+      let text = tags;
+      if (text == null || text == "") {
+        text = '未设置';
+      }
+      return h(Tag,() => text);
     },
   },
   {

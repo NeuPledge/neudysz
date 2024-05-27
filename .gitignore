@@ -41,8 +41,6 @@ sg-generator/build/
 sg-job/build/
 sg-user-service/build/
 sg-exam-service/build/
-frontend/sg-exam-next-app/node_modules/
-frontend/sg-exam-next-app/dist/
-frontend/sg-exam-next-app/yarn.lock
+frontend/sg-exam-mini-app
 config-repo/env/sg-user-service.env
 *.jks
