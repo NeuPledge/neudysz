@@ -12,7 +12,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -45,34 +48,43 @@ public class JRedisCacheConfig {
     @Value("${spring.redis.timeout:60}")
     private int timeOutSecond;
 
+
     @Bean
-    public JedisConnectionFactory jedisConnectionFactory() {
-        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration(redisHost, port);
-        if (StringUtils.isNotEmpty(username)) {
-            configuration.setUsername(username);
-        }
-        if (StringUtils.isNotEmpty(redisPassword)) {
-            configuration.setPassword(redisPassword);
-        }
-
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(10);
-        poolConfig.setMaxIdle(5);
-        poolConfig.setMinIdle(1);
-        poolConfig.setTestOnBorrow(true);
-        poolConfig.setTestOnReturn(true);
-        poolConfig.setTestWhileIdle(true);
-        poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60).toMillis());
-        poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30).toMillis());
-        poolConfig.setNumTestsPerEvictionRun(-1);
-
-        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(configuration);
-        jedisConnectionFactory.setPoolConfig(poolConfig);
-        jedisConnectionFactory.setTimeout(timeOutSecond * 1000); // in milliseconds
-        return jedisConnectionFactory;
+    public JedisPoolConfig jedisPoolConfig() {
+        JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
+        //最大连接数
+        jedisPoolConfig.setMaxTotal(100);
+        //最小空闲连接数
+        jedisPoolConfig.setMinIdle(20);
+        //当池内没有可用的连接时，最大等待时间
+        jedisPoolConfig.setMaxWaitMillis(10000);
+        //------其他属性根据需要自行添加-------------
+        return jedisPoolConfig;
     }
-
-    @Bean
+        @Bean
+    public RedisConnectionFactory redisConnectionFactory(JedisPoolConfig jedisPoolConfig) {
+        //单机版jedis
+        RedisStandaloneConfiguration redisStandaloneConfiguration =
+                new RedisStandaloneConfiguration();
+        //设置redis服务器的host或者ip地址
+        redisStandaloneConfiguration.setHostName(redisHost);
+        //设置默认使用的数据库
+        redisStandaloneConfiguration.setDatabase(0);
+        //设置密码
+        redisStandaloneConfiguration.setPassword(RedisPassword.of(redisPassword));
+        //设置redis的服务的端口号
+        redisStandaloneConfiguration.setPort(port);
+        //获得默认的连接池构造器(怎么设计的，为什么不抽象出单独类，供用户使用呢)
+        JedisClientConfiguration.JedisPoolingClientConfigurationBuilder jpcb =
+                (JedisClientConfiguration.JedisPoolingClientConfigurationBuilder) JedisClientConfiguration.builder();
+        //指定jedisPoolConifig来修改默认的连接池构造器（真麻烦，滥用设计模式！）
+        jpcb.poolConfig(jedisPoolConfig);
+        //通过构造器来构造jedis客户端配置
+        JedisClientConfiguration jedisClientConfiguration = jpcb.build();
+        //单机配置 + 客户端配置 = jedis连接工厂
+        return new JedisConnectionFactory(redisStandaloneConfiguration, jedisClientConfiguration);
+    }
+        @Bean
     public RedisTemplate<String, Long> longRedisTemplate(JedisConnectionFactory jedisConnectionFactory) {
         RedisTemplate<String, Long> redisTemplate = new RedisTemplate<>();
         redisTemplate.setKeySerializer(new StringRedisSerializer());

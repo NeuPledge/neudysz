@@ -88,8 +88,10 @@ export default {
       const {code, result} = res;
       if (code === 0) {
         sysConfig.value = {
-          title: result.sys_wxapp_main_title
+          title: result.sys_wxapp_main_title,
+          tenantCode: result.sys_tenant_code
         };
+        tenantCode.value = sysConfig.value.tenantCode
       }
     }
 
