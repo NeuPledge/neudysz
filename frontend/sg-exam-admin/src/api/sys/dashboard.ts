@@ -9,3 +9,7 @@ export function getDashboardData() {
 export function getDashboardTendency(params?: object) {
   return defHttp.get<ApiRes>({url: DashboardApi.Tendency, params});
 }
+
+export function getSubjectNumByType() {
+  return defHttp.get<ApiRes>({url: DashboardApi.SubjectNumByType});
+}

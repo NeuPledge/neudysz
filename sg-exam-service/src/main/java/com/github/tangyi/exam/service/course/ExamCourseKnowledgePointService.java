@@ -58,7 +58,7 @@ public class ExamCourseKnowledgePointService
 			if (point.getVideoId() != null && point.getVideoUrl() == null) {
 				dto.setVideoUrl(mediaService.videoUrl(point.getVideoId()));
 			}
-			if (point.getSectionId() != null && point.getSpeechUrl() == null) {
+			if (point.getSpeechId() != null && point.getSpeechUrl() == null) {
 				dto.setSpeechUrl(mediaService.videoUrl(Long.valueOf(point.getSpeechId())));
 			}
 		}

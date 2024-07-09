@@ -86,6 +86,10 @@
         SELECT * FROM exam_subjects a WHERE a.type = #{type} ORDER BY a.sort ASC
     </select>
 
+    <select id="findSubjectCountByType" resultType="Integer">
+        SELECT COUNT(1) FROM exam_subjects a WHERE a.type = #{type} ORDER BY a.sort ASC
+    </select>
+
     <select id="findMaxSortByCategoryId" resultType="Integer">
         SELECT max(a.sort) FROM exam_subjects a WHERE a.category_id = #{categoryId}
     </select>

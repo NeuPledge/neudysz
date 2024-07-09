@@ -118,7 +118,7 @@ import {getSysDefaultConfig} from "/@/api/sys/config";
       sysConfig.value = await getSysDefaultConfig();
       sysConfigStore.setSysConfig(sysConfig.value);
       sysConfig.value = sysConfigStore.getSysConfig;
-      formData.tenantCode = 'gitee'
+      formData.tenantCode = sysConfig.value.sys_tenant_code
   });
 
   const { validForm } = useFormValid(formRef);
@@ -134,7 +134,7 @@ import {getSysDefaultConfig} from "/@/api/sys/config";
       const userInfo = await userStore.login({
         password: data.password,
         username: data.account,
-        tenantCode: 'gitee',
+        tenantCode: formData.tenantCode,
         remember: unref(remember),
         mode: 'none',
         sceneStr: ''

@@ -56,6 +56,7 @@
                 <div class="seat" :title="$t('exam.course.courses.registerStudentsCnt')">
                   <i class="el-icon-user-solid" aria-hidden="true"></i> {{ exam.joinNum }}
                 </div>
+                <div>{{ exam.tags }}</div>
               </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ export const growCardList: GrowCardItem[] = [
     value: 0,
     total: 0,
     color: 'green',
-    action: '月',
+    action: '个',
   },
   {
     title: '用户数',
@@ -22,7 +22,7 @@ export const growCardList: GrowCardItem[] = [
     value: 0,
     total: 0,
     color: 'blue',
-    action: '月',
+    action: '个',
   },
   {
     title: '考试数',
@@ -30,7 +30,7 @@ export const growCardList: GrowCardItem[] = [
     value: 0,
     total: 0,
     color: 'orange',
-    action: '周',
+    action: '场',
   },
   {
     title: '考试次数',
@@ -38,7 +38,7 @@ export const growCardList: GrowCardItem[] = [
     value: 0,
     total: 0,
     color: 'purple',
-    action: '年',
+    action: '次',
   },
 ];
 

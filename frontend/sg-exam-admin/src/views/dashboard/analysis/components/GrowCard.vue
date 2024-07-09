@@ -57,10 +57,10 @@ export default defineComponent({
       const recordNumber = Number(examinationRecordNumber);
       const tenantNumber = Number(tenantCount);
 
-      cardList.push(generateDashboardCard('单位数', 'visit-count|svg', tenantNumber,tenantNumber,'green', '月'));
-      cardList.push(generateDashboardCard('用户数', 'total-sales|svg', userNumber,userNumber,'blue', '月'));
-      cardList.push(generateDashboardCard('考试数', 'download-count|svg', examNumber,examNumber,'green', '周'));
-      cardList.push(generateDashboardCard('考试次数', 'transaction|svg', recordNumber,recordNumber,'green', '年'));
+      cardList.push(generateDashboardCard('单位数', 'visit-count|svg', tenantNumber,tenantNumber,'green', '个'));
+      cardList.push(generateDashboardCard('用户数', 'total-sales|svg', userNumber,userNumber,'blue', '个'));
+      cardList.push(generateDashboardCard('考试数', 'download-count|svg', examNumber,examNumber,'green', '场'));
+      cardList.push(generateDashboardCard('考试次数', 'transaction|svg', recordNumber,recordNumber,'green', '次'));
     }
     onMounted(() => {
       fetch();

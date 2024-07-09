@@ -144,7 +144,7 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 		List<Long> categoryIds = Lists.newArrayList();
 		Collection<SubjectDto> list = this.getSubjectsBySubjects(pageInfo.getList());
 		for (SubjectDto dto : list) {
-			//这个是根据 categoryIdj 进行查找的
+			//这个是根据 categoryId 进行查找的
 			if (params.get("subjectName") == null) {
 				dtoList.add(dto);
 			} else {
@@ -539,6 +539,10 @@ public class SubjectsService extends CrudService<SubjectsMapper, Subjects> imple
 
 	public List<Subjects> findByType(Integer type) {
 		return super.dao.findByType(type);
+	}
+
+	public Integer findSubjectCountByType(Integer type) {
+		return super.dao.findSubjectCountByType(type);
 	}
 
 	public Integer findMaxSortByCategoryId(Long categoryId) {

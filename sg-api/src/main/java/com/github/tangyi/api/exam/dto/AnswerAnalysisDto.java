@@ -41,6 +41,7 @@ public class AnswerAnalysisDto implements Serializable {
 	private long userCnt;
 	private double avgScore;
 	private double highestScore;
+	private double fullScore;
 	private double lowestScore;
 	private List<ScoreItem> scoreItems;
 	private Map<String, Integer> scoreDistribution;

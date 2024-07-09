@@ -39,6 +39,8 @@ dependencies {
     implementation 'com.aliyun:dysmsapi20170525:2.0.9'
     implementation 'com.alibaba:fastjson:1.2.70'
     implementation 'cn.smallbun.screw:screw-core:1.0.5'
+    implementation 'redis.clients:jedis:3.7.0'
+    implementation 'com.alibaba:druid-spring-boot-starter:1.1.10'
     implementation('com.baidu.aip:java-sdk:4.15.4') {
         exclude group: 'org.slf4j', module: 'slf4j-simple'
     }
